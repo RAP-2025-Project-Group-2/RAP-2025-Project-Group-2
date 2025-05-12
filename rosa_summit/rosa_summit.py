@@ -28,17 +28,6 @@ def send_vel(velocity: float) -> str:
 
 
 @tool
-def talk_to_user(message: str) -> str:
-    """
-    Sends a message to the user.
-
-    :param message: the message to be sent
-    """
-    print("Sending message to user: %s" % message)
-    return "Message sent: %s" % message
-
-
-@tool
 def stop() -> str:
     """
     Stops or halts the robot by setting its velocity to zero
@@ -50,6 +39,21 @@ def stop() -> str:
         return "Robot was stopped"
     else:
         return "Failed stopping robot"
+
+
+@tool
+def toggle_auto_exploration(resume_exploration: bool) -> str:
+    """
+    Starts or stops the autonomous exploration.
+
+    :param resume_exploration: True to start/resume exploration, False to stop/pause exploration.
+    """
+    cmd = f"ros2 topic pub --once /summit/explore/resume std_msgs/msg/Bool '{{data: {str(resume_exploration).lower()}}}'"
+    success, output = execute_ros_command(cmd)
+    if success:
+        return f"Exploration {'resumed' if resume_exploration else 'paused'}"
+    else:
+        return f"Failed to {'resume' if resume_exploration else 'pause'} exploration"
 
 
 def main():
@@ -95,7 +99,7 @@ def main():
     agent = ROSA(
         ros_version=2,
         llm=llm,
-        tools=[send_vel, stop, talk_to_user],
+        tools=[send_vel, stop, toggle_auto_exploration],
         prompts=prompt,
     )
 
