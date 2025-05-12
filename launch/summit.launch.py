@@ -48,10 +48,6 @@ def generate_launch_description():
                 PythonLaunchDescriptionSource(summit_xl_simulation_launch_file),
                 # launch_arguments=summit_xl_launch_args  # Uncomment if you have launch arguments
             ),
-            # Include the Summit XL MoveIt launch file
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(summit_xl_move_it_launch_file),
-            ),
             # Include the Summit XL navigation launch file with SLAM enabled
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(summit_xl_nav2_launch_file),
@@ -65,6 +61,10 @@ def generate_launch_description():
                     "use_sim_time": "true",
                 }.items(),
             ),
+            # # Include the Summit XL MoveIt launch file
+            # IncludeLaunchDescription(
+            #     PythonLaunchDescriptionSource(summit_xl_move_it_launch_file),
+            # ),
             # Command to stop exploration immediately after starting
             ExecuteProcess(
                 cmd=[
