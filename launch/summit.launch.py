@@ -28,6 +28,13 @@ def generate_launch_description():
         "summit_xl_nav2.launch.py",
     )
 
+    # Path to the explore_lite launch file
+    explore_lite_launch_file = os.path.join(
+        FindPackageShare("explore_lite").find("explore_lite"),
+        "launch",
+        "explore.launch.py",
+    )
+
     # Declare the launch arguments for the included launch file (if any)
     # For example, if summit_xl_simulation_ign.launch.py accepts 'world_name':
     # summit_xl_launch_args = {
@@ -49,6 +56,14 @@ def generate_launch_description():
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(summit_xl_nav2_launch_file),
                 launch_arguments={"slam": "True"}.items(),
+            ),
+            # Include the explore_lite launch file
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(explore_lite_launch_file),
+                launch_arguments={
+                    "namespace": "/summit",
+                    "use_sim_time": "true",
+                }.items(),
             ),
         ]
     )

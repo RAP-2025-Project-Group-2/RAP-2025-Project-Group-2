@@ -1,2 +1,3 @@
 api-key.txt
 **/__pycache__/
+*.ikcache
