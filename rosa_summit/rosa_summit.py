@@ -56,6 +56,83 @@ def toggle_auto_exploration(resume_exploration: bool) -> str:
         return f"Failed to {'resume' if resume_exploration else 'pause'} exploration"
 
 
+@tool
+def get_map() -> str:
+    """
+    Retrieves the occupancy grid map from the /summit/map topic.
+    """
+    cmd = "ros2 topic echo --once /summit/map nav_msgs/msg/OccupancyGrid"
+    success, output = execute_ros_command(cmd)
+    if success:
+        return f"Map data retrieved: {output}"
+    else:
+        return "Failed to retrieve map data"
+
+
+@tool
+def navigate_to_pose(
+    x: float, y: float, z_orientation: float, w_orientation: float
+) -> str:
+    """
+    Moves the robot to an absolute position on the map.
+
+    :param x: The x coordinate of the target position.
+    :param y: The y coordinate of the target position.
+    :param z_orientation: The z component of the target orientation (quaternion).
+    :param w_orientation: The w component of the target orientation (quaternion).
+    """
+    cmd = (
+        f"ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose '{{ "
+        f"pose: {{ "
+        f'header: {{ frame_id: "map" }}, '
+        f"pose: {{ "
+        f"position: {{x: {x}, y: {y}, z: 0.0}}, "
+        f"orientation: {{x: 0.0, y: 0.0, z: {z_orientation}, w: {w_orientation}}} "
+        f"}} }} }}"
+    )
+    success, output = execute_ros_command(cmd)
+    if success:
+        # The output of send_goal can be verbose, let's return a simpler message.
+        # We might want to parse the output to see if the goal was accepted.
+        if "Goal accepted" in output:
+            return f"Navigation goal sent to x: {x}, y: {y}, orientation_z: {z_orientation}, orientation_w: {w_orientation}. Waiting for result..."
+        else:
+            return f"Navigation goal to x: {x}, y: {y} might have been sent. Output: {output}"
+    else:
+        return f"Failed to send navigation goal. Error: {output}"
+
+
+@tool
+def navigate_relative(
+    x: float, y: float, z_orientation: float, w_orientation: float
+) -> str:
+    """
+    Moves the robot relative to its current position.
+
+    :param x: The x coordinate of the target position relative to the robot.
+    :param y: The y coordinate of the target position relative to the robot.
+    :param z_orientation: The z component of the target orientation (quaternion) relative to the robot.
+    :param w_orientation: The w component of the target orientation (quaternion) relative to the robot.
+    """
+    cmd = (
+        f"ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose '{{ "
+        f"pose: {{ "
+        f'header: {{ frame_id: "summit/base_link" }}, '
+        f"pose: {{ "
+        f"position: {{x: {x}, y: {y}, z: 0.0}}, "
+        f"orientation: {{x: 0.0, y: 0.0, z: {z_orientation}, w: {w_orientation}}} "
+        f"}} }} }}'"
+    )
+    success, output = execute_ros_command(cmd)
+    if success:
+        if "Goal accepted" in output:
+            return f"Relative navigation goal sent to x: {x}, y: {y}, orientation_z: {z_orientation}, orientation_w: {w_orientation}. Waiting for result..."
+        else:
+            return f"Relative navigation goal to x: {x}, y: {y} might have been sent. Output: {output}"
+    else:
+        return f"Failed to send relative navigation goal. Error: {output}"
+
+
 def main():
     print("Hi from rosa_summit.")
 
@@ -99,7 +176,14 @@ def main():
     agent = ROSA(
         ros_version=2,
         llm=llm,
-        tools=[send_vel, stop, toggle_auto_exploration],
+        tools=[
+            send_vel,
+            stop,
+            toggle_auto_exploration,
+            get_map,
+            navigate_to_pose,
+            navigate_relative,  # Added new tool
+        ],
         prompts=prompt,
     )
 
