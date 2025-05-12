@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, ExecuteProcess
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -64,6 +64,18 @@ def generate_launch_description():
                     "namespace": "/summit",
                     "use_sim_time": "true",
                 }.items(),
+            ),
+            # Command to stop exploration immediately after starting
+            ExecuteProcess(
+                cmd=[
+                    "ros2",
+                    "topic",
+                    "pub",
+                    "--once",
+                    "/summit/explore/resume",
+                    "std_msgs/msg/Bool",
+                    "{data: false}",
+                ],
             ),
         ]
     )
