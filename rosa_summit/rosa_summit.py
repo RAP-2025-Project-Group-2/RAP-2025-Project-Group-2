@@ -36,21 +36,8 @@ def execute_ros_command(command: str) -> Tuple[bool, str]:
 # Helper function to get the maps directory
 def _get_maps_dir() -> str:
     """Gets the absolute path to the 'maps' directory in the rosa_summit package, creates it if it doesn't exist."""
-    try:
-        package_share_dir = get_package_share_directory("rosa_summit")
-    except Exception as e:
-        print(f"Error finding package 'rosa_summit': {e}")
-        # Fallback or raise error - for now, let's try a relative path as a last resort, though not ideal.
-        # This fallback is unlikely to work correctly in all execution contexts.
-        # A better approach would be to ensure the package is correctly sourced.
-        package_share_dir = os.path.join(
-            os.path.dirname(__file__), "..", "resource"
-        )  # Assuming script is in rosa_summit/
-        print(
-            f"Warning: Could not find rosa_summit via ament. Falling back to relative path: {package_share_dir}"
-        )
 
-    maps_dir = os.path.join(package_share_dir, "maps")
+    maps_dir = "/home/ros/rap/Gruppe2/maps"
     pathlib.Path(maps_dir).mkdir(parents=True, exist_ok=True)
     return maps_dir
 
