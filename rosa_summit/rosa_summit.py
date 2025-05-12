@@ -2,9 +2,57 @@ from langchain_anthropic import ChatAnthropic
 from langchain_ollama import ChatOllama
 from langchain.agents import tool
 from rosa import ROSA
-from rosa.tools.ros2 import execute_ros_command
 from rosa.prompts import RobotSystemPrompts
 import os
+from ament_index_python.packages import get_package_share_directory
+import pathlib
+import subprocess
+from typing import Tuple
+
+
+def execute_ros_command(command: str) -> Tuple[bool, str]:
+    """
+    Execute a ROS2 command.
+
+    :param command: The ROS2 command to execute.
+    :return: A tuple containing a boolean indicating success and the output of the command.
+    """
+
+    # Validate the command is a proper ROS2 command
+    cmd = command.split(" ")
+
+    if len(cmd) < 2:
+        raise ValueError(f"'{command}' is not a valid ROS2 command.")
+    if cmd[0] != "ros2":
+        raise ValueError(f"'{command}' is not a valid ROS2 command.")
+
+    try:
+        output = subprocess.check_output(command, shell=True).decode()
+        return True, output
+    except Exception as e:
+        return False, str(e)
+
+
+# Helper function to get the maps directory
+def _get_maps_dir() -> str:
+    """Gets the absolute path to the 'maps' directory in the rosa_summit package, creates it if it doesn't exist."""
+    try:
+        package_share_dir = get_package_share_directory("rosa_summit")
+    except Exception as e:
+        print(f"Error finding package 'rosa_summit': {e}")
+        # Fallback or raise error - for now, let's try a relative path as a last resort, though not ideal.
+        # This fallback is unlikely to work correctly in all execution contexts.
+        # A better approach would be to ensure the package is correctly sourced.
+        package_share_dir = os.path.join(
+            os.path.dirname(__file__), "..", "resource"
+        )  # Assuming script is in rosa_summit/
+        print(
+            f"Warning: Could not find rosa_summit via ament. Falling back to relative path: {package_share_dir}"
+        )
+
+    maps_dir = os.path.join(package_share_dir, "maps")
+    pathlib.Path(maps_dir).mkdir(parents=True, exist_ok=True)
+    return maps_dir
 
 
 @tool
@@ -133,6 +181,88 @@ def navigate_relative(
         return f"Failed to send relative navigation goal. Error: {output}"
 
 
+@tool
+def save_map(map_name: str) -> str:
+    """
+    Saves the current map from the /summit/map topic to .yaml and .pgm files
+    in the 'maps' directory of the 'rosa_summit' package.
+
+    :param map_name: The name for the map (e.g., 'my_lab_map'). Do not include file extensions.
+    """
+    maps_dir = _get_maps_dir()
+    if not os.path.isdir(
+        maps_dir
+    ):  # Should be created by _get_maps_dir, but double check
+        return f"Error: Maps directory {maps_dir} could not be accessed or created."
+
+    filepath_prefix = os.path.join(maps_dir, map_name)
+
+    # Added --ros-args -r map:=/summit/map to specify the topic
+    cmd = f"ros2 run nav2_map_server map_saver_cli -f '{filepath_prefix}' --ros-args -r map:=/summit/map"
+    success, output = execute_ros_command(cmd)
+    if success:
+        if "Map saved to" in output:
+            return f"Map successfully saved as {map_name} in {maps_dir}"
+        else:
+            return f"Map saving process initiated for {map_name} in {maps_dir}. Output: {output}"
+    else:
+        return f"Failed to save map {map_name} in {maps_dir}. Error: {output}"
+
+
+@tool
+def load_map(map_name: str) -> str:
+    """
+    Loads a map from the 'maps' directory of the 'rosa_summit' package.
+    The map_server should be configured to publish the loaded map to /summit/map for consistency.
+
+    :param map_name: The name of the map to load (e.g., 'my_lab_map'). Do not include file extensions.
+    """
+    maps_dir = _get_maps_dir()
+    if not os.path.isdir(maps_dir):
+        return f"Error: Maps directory {maps_dir} not found."
+
+    map_yaml_filepath = os.path.join(maps_dir, f"{map_name}.yaml")
+
+    if not os.path.exists(map_yaml_filepath):
+        return f"Error: Map file {map_yaml_filepath} not found. Available maps: {list_saved_maps()}"
+
+    cmd = f"ros2 service call /map_server/load_map nav2_msgs/srv/LoadMap \\\"{{map_url: '{map_yaml_filepath}'}}\\\""
+    success, output = execute_ros_command(cmd)
+    if success:
+        if "response:" in output and "result=0" in output:
+            return f"Map loading initiated for {map_name} from {map_yaml_filepath}. Service call successful."
+        elif "response:" in output:
+            return f"Map loading service called for {map_name} from {map_yaml_filepath}. Response: {output}"
+        else:
+            return f"Attempted to load map {map_name} from {map_yaml_filepath}. Output: {output}"
+    else:
+        return f"Failed to call load_map service for {map_name} from {map_yaml_filepath}. Error: {output}"
+
+
+@tool
+def list_saved_maps() -> str:
+    """
+    Lists all saved maps in the 'maps' directory of the 'rosa_summit' package.
+    Returns a list of map names (without .yaml extension).
+    """
+    maps_dir = _get_maps_dir()
+    if not os.path.isdir(maps_dir):
+        return "Maps directory not found or is not a directory."
+
+    try:
+        files = os.listdir(maps_dir)
+        map_files = [
+            f[:-5]
+            for f in files
+            if f.endswith(".yaml") and os.path.isfile(os.path.join(maps_dir, f))
+        ]
+        if not map_files:
+            return "No saved maps found in the maps directory."
+        return f"Available maps: {', '.join(map_files)}"
+    except Exception as e:
+        return f"Error listing maps: {e}"
+
+
 def main():
     print("Hi from rosa_summit.")
 
@@ -182,7 +312,10 @@ def main():
             toggle_auto_exploration,
             get_map,
             navigate_to_pose,
-            navigate_relative,  # Added new tool
+            navigate_relative,
+            save_map,
+            load_map,
+            list_saved_maps,
         ],
         prompts=prompt,
     )
