@@ -1,6 +1,8 @@
+# These are necessary for my home setup
 export HOME=/home/ros
 source /home/ros/.bashrc
 
+# Linking the ROS2 workspace
 ln -s /home/ros/rap/Gruppe2/ /home/ros/colcon_ws/src/
 
 # Check and clone m-explore-ros2 if not present
@@ -12,8 +14,11 @@ else
   echo "m-explore-ros2 directory already exists."
 fi
 
+# The map_merge package is not needed for the current setup 
+# and also causes issues with the current ros2 jazzy version
 rm -rf /home/ros/colcon_ws/src/m-explore-ros2/map_merge/
 
+# Build the workspace
 cd /home/ros/colcon_ws
 colcon build --symlink-install
 source install/setup.bash
@@ -22,7 +27,7 @@ rosdep install --from-paths src --ignore-src -r -y
 cd -
 echo "** ROS2 $ROS_DISTRO initialized with $RMW_IMPLEMENTATION**"
 
-
+# Install Python packages
 pip3 install jpl-rosa --break-system-packages
 pip3 install langchain-ollama --upgrade --break-system-packages
 pip3 install langchain-core --upgrade --break-system-packages
