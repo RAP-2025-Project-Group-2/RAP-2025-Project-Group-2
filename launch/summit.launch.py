@@ -35,18 +35,14 @@ def generate_launch_description():
         "explore.launch.py",
     )
 
-    # Declare the launch arguments for the included launch file (if any)
-    # For example, if summit_xl_simulation_ign.launch.py accepts 'world_name':
-    # summit_xl_launch_args = {
-    #     'world_name': 'my_custom_world'
-    # }.items()
-
     return LaunchDescription(
         [
             # Include the Summit XL simulation launch file
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(summit_xl_simulation_launch_file),
-                # launch_arguments=summit_xl_launch_args  # Uncomment if you have launch arguments
+                launch_arguments={
+                    "world": "/home/bonsai/Development/rap/Gruppe2/world/small_house.world"
+                }.items(),
             ),
             # Include the Summit XL navigation launch file with SLAM enabled
             IncludeLaunchDescription(

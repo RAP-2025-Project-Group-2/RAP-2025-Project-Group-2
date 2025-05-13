@@ -34,3 +34,6 @@ pip3 install langchain-core --upgrade --break-system-packages
 pip3 install pydantic --upgrade --break-system-packages
 pip3 install anthropic --upgrade --break-system-packages
 pip3 install langchain-anthropic --upgrade --break-system-packages
+
+# gazebo models
+export GZ_SIM_RESOURCE_PATH=/home/ros/rap/Gruppe2/world/models
