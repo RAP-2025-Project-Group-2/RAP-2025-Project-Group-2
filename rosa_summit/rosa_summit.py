@@ -318,7 +318,10 @@ def main():
             try:
                 print("Request sent")
                 res = agent.invoke(msg)
-                print(res)
+                if isinstance(res, (list, tuple)):
+                    print(res[0])
+                else:
+                    print(res)
             except Exception as e:
                 print(f"An error occurred: {e}")
     except KeyboardInterrupt:
