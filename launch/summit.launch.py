@@ -14,18 +14,18 @@ def generate_launch_description():
         "summit_xl_simulation_ign.launch.py",
     )
 
-    # Path to the MoveIt launch file
-    summit_xl_move_it_launch_file = os.path.join(
-        FindPackageShare("icclab_summit_xl").find("icclab_summit_xl"),
-        "launch",
-        "summit_xl_move_it.launch.py",
-    )
-
     # Path to the navigation launch file
     summit_xl_nav2_launch_file = os.path.join(
         FindPackageShare("icclab_summit_xl").find("icclab_summit_xl"),
         "launch",
         "summit_xl_nav2.launch.py",
+    )
+
+    # Path to the MoveIt launch file
+    summit_xl_move_it_launch_file = os.path.join(
+        FindPackageShare("icclab_summit_xl").find("icclab_summit_xl"),
+        "launch",
+        "summit_xl_move_it.launch.py",
     )
 
     # Path to the explore_lite launch file
@@ -35,43 +35,57 @@ def generate_launch_description():
         "explore.launch.py",
     )
 
-    return LaunchDescription(
-        [
-            # Include the Summit XL simulation launch file
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(summit_xl_simulation_launch_file),
-                launch_arguments={
-                    "world": "/home/bonsai/Development/rap/Gruppe2/world/small_house.world"
-                }.items(),
-            ),
-            # Include the Summit XL navigation launch file with SLAM enabled
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(summit_xl_nav2_launch_file),
-                launch_arguments={"slam": "True"}.items(),
-            ),
-            # Include the explore_lite launch file
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(explore_lite_launch_file),
-                launch_arguments={
-                    "namespace": "/summit",
-                    "use_sim_time": "true",
-                }.items(),
-            ),
-            # # Include the Summit XL MoveIt launch file
-            # IncludeLaunchDescription(
-            #     PythonLaunchDescriptionSource(summit_xl_move_it_launch_file),
-            # ),
-            # Command to stop exploration immediately after starting
-            ExecuteProcess(
-                cmd=[
-                    "ros2",
-                    "topic",
-                    "pub",
-                    "--once",
-                    "/summit/explore/resume",
-                    "std_msgs/msg/Bool",
-                    "{data: false}",
-                ],
-            ),
-        ]
+    launch_description = []
+
+    # Include the Summit XL simulation launch file
+    launch_description.append(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(summit_xl_simulation_launch_file),
+            launch_arguments={
+                "world": "/home/bonsai/Development/rap/Gruppe2/world/small_house.world"
+            }.items(),
+        )
     )
+
+    # Include the Summit XL navigation launch file with SLAM enabled
+    launch_description.append(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(summit_xl_nav2_launch_file),
+            launch_arguments={"slam": "True"}.items(),
+        )
+    )
+
+    # Include the explore_lite launch file
+    launch_description.append(
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(explore_lite_launch_file),
+            launch_arguments={
+                "namespace": "/summit",
+                "use_sim_time": "true",
+            }.items(),
+        )
+    )
+
+    # Include the Summit XL MoveIt launch file
+    # launch_description.append(
+    #     IncludeLaunchDescription(
+    #         PythonLaunchDescriptionSource(summit_xl_move_it_launch_file),
+    #     )
+    # )
+
+    # Command to stop exploration immediately after starting
+    launch_description.append(
+        ExecuteProcess(
+            cmd=[
+                "ros2",
+                "topic",
+                "pub",
+                "--once",
+                "/summit/explore/resume",
+                "std_msgs/msg/Bool",
+                "{data: false}",
+            ],
+        )
+    )
+
+    return LaunchDescription(launch_description)

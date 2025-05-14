@@ -1,4 +1,4 @@
-image: default.yaml.pgm
+image: default.pgm
 mode: trinary
 resolution: 0.05
 origin: [-9.84, -9.74, 0]
