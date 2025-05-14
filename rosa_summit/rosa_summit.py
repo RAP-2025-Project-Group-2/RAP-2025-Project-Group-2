@@ -197,36 +197,6 @@ def save_map(map_name: str) -> str:
 
 
 @tool
-def load_map(map_name: str) -> str:
-    """
-    Loads a map from the 'maps' directory of the 'rosa_summit' package.
-    The map_server should be configured to publish the loaded map to /summit/map for consistency.
-
-    :param map_name: The name of the map to load (e.g., 'my_lab_map'). Do not include file extensions.
-    """
-    maps_dir = _get_maps_dir()
-    if not os.path.isdir(maps_dir):
-        return f"Error: Maps directory {maps_dir} not found."
-
-    map_yaml_filepath = os.path.join(maps_dir, f"{map_name}.yaml")
-
-    if not os.path.exists(map_yaml_filepath):
-        return f"Error: Map file {map_yaml_filepath} not found. Available maps: {list_saved_maps()}"
-
-    cmd = f"ros2 service call /map_server/load_map nav2_msgs/srv/LoadMap \\\"{{map_url: '{map_yaml_filepath}'}}\\\""
-    success, output = execute_ros_command(cmd)
-    if success:
-        if "response:" in output and "result=0" in output:
-            return f"Map loading initiated for {map_name} from {map_yaml_filepath}. Service call successful."
-        elif "response:" in output:
-            return f"Map loading service called for {map_name} from {map_yaml_filepath}. Response: {output}"
-        else:
-            return f"Attempted to load map {map_name} from {map_yaml_filepath}. Output: {output}"
-    else:
-        return f"Failed to call load_map service for {map_name} from {map_yaml_filepath}. Error: {output}"
-
-
-@tool
 def list_saved_maps() -> str:
     """
     Lists all saved maps in the 'maps' directory of the 'rosa_summit' package.
