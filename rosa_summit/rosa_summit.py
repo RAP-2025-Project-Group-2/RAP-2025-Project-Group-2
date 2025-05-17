@@ -4,7 +4,6 @@ from langchain.agents import tool
 from rosa import ROSA
 from rosa.prompts import RobotSystemPrompts
 import os
-from ament_index_python.packages import get_package_share_directory
 import pathlib
 import subprocess
 from typing import Tuple
@@ -271,7 +270,6 @@ def main():
             navigate_to_pose,
             navigate_relative,
             save_map,
-            load_map,
             list_saved_maps,
         ],
         prompts=prompt,
