@@ -41,6 +41,56 @@ def _get_maps_dir() -> str:
     return maps_dir
 
 
+# Hardcoded locations
+LOCATIONS = {
+    "gym": {
+        "position": {"x": 1.9517535073729964, "y": 4.359393291484201, "z": 0.0},
+        "orientation": {
+            "x": 1.6302566310137402e-08,
+            "y": 2.9703213238180324e-08,
+            "z": -0.07945176214102775,
+            "w": 0.9968387118750377,
+        },
+    },
+    "kitchen": {
+        "position": {"x": 7.353217566768062, "y": -3.458078519447155, "z": 0.0},
+        "orientation": {
+            "x": 1.611930208234276e-08,
+            "y": 2.980589390984495e-08,
+            "z": -0.07325043342926793,
+            "w": 0.997313578571165,
+        },
+    },
+    "living room": {
+        "position": {"x": 1.084137940689, "y": -0.383112079564818, "z": 0.0},
+        "orientation": {
+            "x": 3.316520260505064e-08,
+            "y": 6.931688679143018e-09,
+            "z": -0.8089064668855616,
+            "w": 0.5879373502599718,
+        },
+    },
+    "office": {
+        "position": {"x": -4.9521764504716765, "y": -3.573205806403106, "z": 0.0},
+        "orientation": {
+            "x": -3.238093524948138e-08,
+            "y": 9.961584542476143e-09,
+            "z": 0.9923116132365216,
+            "w": -0.1237645435329962,
+        },
+    },
+    "bedroom": {
+        "position": {"x": -4.002267652240865, "y": -0.060121871401907084, "z": 0.0},
+        "orientation": {
+            "x": -2.1636165143756515e-08,
+            "y": 2.6069771799291994e-08,
+            "z": 0.8980250477792399,
+            "w": 0.43994433007039957,
+        },
+    },
+}
+
+
 @tool
 def send_vel(velocity: float) -> str:
     """
@@ -219,6 +269,37 @@ def list_saved_maps() -> str:
         return f"Error listing maps: {e}"
 
 
+@tool
+def get_location_names() -> str:
+    """
+    Returns a list of available location names.
+    """
+    return f"Available locations: {', '.join(LOCATIONS.keys())}"
+
+
+@tool
+def navigate_to_location_by_name(location_name: str) -> str:
+    """
+    Moves the robot to a predefined location by its name.
+
+    :param location_name: The name of the location to navigate to (e.g., 'kitchen', 'gym').
+    """
+    location_name_lower = location_name.lower()
+    if location_name_lower not in LOCATIONS:
+        return f"Location '{location_name}' not found. Available locations are: {', '.join(LOCATIONS.keys())}"
+
+    loc_data = LOCATIONS[location_name_lower]
+    pos = loc_data["position"]
+    orient = loc_data["orientation"]
+
+    return navigate_to_pose(
+        x=pos["x"],
+        y=pos["y"],
+        z_orientation=orient["z"],
+        w_orientation=orient["w"],
+    )
+
+
 def main():
     print("Hi from rosa_summit.")
 
@@ -271,6 +352,8 @@ def main():
             navigate_relative,
             save_map,
             list_saved_maps,
+            get_location_names,
+            navigate_to_location_by_name,
         ],
         prompts=prompt,
     )
