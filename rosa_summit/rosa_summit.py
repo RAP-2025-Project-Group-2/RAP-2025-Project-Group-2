@@ -5,13 +5,17 @@ from rosa import ROSA
 from rosa.prompts import RobotSystemPrompts
 import os
 import pathlib
+import time
 import subprocess
 from typing import Tuple
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, PoseStamped
+from std_msgs.msg import Bool
+from nav2_msgs.action import NavigateToPose
 import rclpy
 
-vel_publisher = None
 node = None
+vel_publisher = None
+explore_publisher = None
 
 
 def execute_ros_command(command: str) -> Tuple[bool, str]:
@@ -127,12 +131,15 @@ def toggle_auto_exploration(resume_exploration: bool) -> str:
 
     :param resume_exploration: True to start/resume exploration, False to stop/pause exploration.
     """
-    cmd = f"ros2 topic pub --once /summit/explore/resume std_msgs/msg/Bool '{{data: {str(resume_exploration).lower()}}}'"
-    success, output = execute_ros_command(cmd)
-    if success:
-        return f"Exploration {'resumed' if resume_exploration else 'paused'}"
+    global explore_publisher
+    msg = Bool()
+    msg.data = resume_exploration
+    explore_publisher.publish(msg)
+
+    if resume_exploration:
+        return "Autonomous exploration started/resumed."
     else:
-        return f"Failed to {'resume' if resume_exploration else 'pause'} exploration"
+        return "Autonomous exploration stopped/paused."
 
 
 def navigate_to_pose(
@@ -277,15 +284,17 @@ def navigate_to_location_by_name(location_name: str) -> str:
 
 
 def main():
-    global vel_publisher, node
+    global node, vel_publisher, explore_publisher
     print("Hi from rosa_summit.")
 
     # init rclpy
     rclpy.init()
     node = rclpy.create_node("rosa_summit_node")
     vel_publisher = node.create_publisher(Twist, "/summit/cmd_vel", 10)
+    explore_publisher = node.create_publisher(Bool, "/summit/explore/resume", 10)
 
-    stop()
+    toggle_auto_exploration(True)
+    time.sleep(2)
     exit(0)
 
     # Get the current username
