@@ -7,6 +7,11 @@ import os
 import pathlib
 import subprocess
 from typing import Tuple
+from geometry_msgs.msg import Twist
+import rclpy
+
+vel_publisher = None
+node = None
 
 
 def execute_ros_command(command: str) -> Tuple[bool, str]:
@@ -91,41 +96,31 @@ LOCATIONS = {
 }
 
 
-@tool
 def send_vel(velocity: float) -> str:
     """
     Sets the forward velocity of the robot.
 
     :param velocity: the velocity at which the robot should move
     """
-    print("Setting velocity to %s" % velocity)
-    cmd = (
-        "ros2 topic pub -1 /summit/cmd_vel geometry_msgs/msg/Twist '{linear: {x: "
-        + str(velocity)
-        + ", y: 0.0, z: 0.0}, angular: { x: 0.0, y: 0.0, z: 0.0}}'"
-    )
-    success, output = execute_ros_command(cmd)
-    if success:
-        return "Velocity set to %s" % velocity
-    else:
-        return "Failed setting velocity"
+    global vel_publisher
+    twist = Twist()
+    twist.linear.x = velocity
+    vel_publisher.publish(twist)
+
+    return "Velocity set to %s" % velocity
 
 
-@tool
 def stop() -> str:
     """
     Stops or halts the robot by setting its velocity to zero
 
     """
-    cmd = "ros2 topic pub -1 /summit/cmd_vel geometry_msgs/msg/Twist '{linear: {x: 0.0, y: 0.0, z: 0.0}, angular: { x: 0.0, y: 0.0, z: 0.0}}'"
-    success, output = execute_ros_command(cmd)
-    if success:
-        return "Robot was stopped"
-    else:
-        return "Failed stopping robot"
+    global vel_publisher
+    twist = Twist()
+    vel_publisher.publish(twist)
+    return "Robot stopped"
 
 
-@tool
 def toggle_auto_exploration(resume_exploration: bool) -> str:
     """
     Starts or stops the autonomous exploration.
@@ -140,20 +135,6 @@ def toggle_auto_exploration(resume_exploration: bool) -> str:
         return f"Failed to {'resume' if resume_exploration else 'pause'} exploration"
 
 
-@tool
-def get_map() -> str:
-    """
-    Retrieves the occupancy grid map from the /summit/map topic.
-    """
-    cmd = "ros2 topic echo --once /summit/map nav_msgs/msg/OccupancyGrid"
-    success, output = execute_ros_command(cmd)
-    if success:
-        return f"Map data retrieved: {output}"
-    else:
-        return "Failed to retrieve map data"
-
-
-@tool
 def navigate_to_pose(
     x: float, y: float, z_orientation: float, w_orientation: float
 ) -> str:
@@ -186,7 +167,6 @@ def navigate_to_pose(
         return f"Failed to send navigation goal. Error: {output}"
 
 
-@tool
 def navigate_relative(
     x: float, y: float, z_orientation: float, w_orientation: float
 ) -> str:
@@ -217,7 +197,6 @@ def navigate_relative(
         return f"Failed to send relative navigation goal. Error: {output}"
 
 
-@tool
 def save_map(map_name: str) -> str:
     """
     Saves the current map from the /summit/map topic to .yaml and .pgm files
@@ -245,7 +224,6 @@ def save_map(map_name: str) -> str:
         return f"Failed to save map {map_name} in {maps_dir}. Error: {output}"
 
 
-@tool
 def list_saved_maps() -> str:
     """
     Lists all saved maps in the 'maps' directory of the 'rosa_summit' package.
@@ -269,7 +247,6 @@ def list_saved_maps() -> str:
         return f"Error listing maps: {e}"
 
 
-@tool
 def get_location_names() -> str:
     """
     Returns a list of available location names.
@@ -277,7 +254,6 @@ def get_location_names() -> str:
     return f"Available locations: {', '.join(LOCATIONS.keys())}"
 
 
-@tool
 def navigate_to_location_by_name(location_name: str) -> str:
     """
     Moves the robot to a predefined location by its name.
@@ -301,7 +277,16 @@ def navigate_to_location_by_name(location_name: str) -> str:
 
 
 def main():
+    global vel_publisher, node
     print("Hi from rosa_summit.")
+
+    # init rclpy
+    rclpy.init()
+    node = rclpy.create_node("rosa_summit_node")
+    vel_publisher = node.create_publisher(Twist, "/summit/cmd_vel", 10)
+
+    stop()
+    exit(0)
 
     # Get the current username
     user_name = os.getenv("USER")
@@ -347,7 +332,6 @@ def main():
             send_vel,
             stop,
             toggle_auto_exploration,
-            get_map,
             navigate_to_pose,
             navigate_relative,
             save_map,
