@@ -13,6 +13,7 @@ from std_msgs.msg import Bool
 from nav2_msgs.action import NavigateToPose
 import rclpy
 from rclpy.action import ActionClient
+from rclpy.parameter import Parameter
 
 node = None
 vel_publisher = None
@@ -183,7 +184,7 @@ def navigate_relative(
     global navigate_to_pose_action_client, node
 
     goal_msg = NavigateToPose.Goal()
-    goal_msg.pose.header.frame_id = "/summit/base_link"
+    goal_msg.pose.header.frame_id = "base_link"
     goal_msg.pose.header.stamp = node.get_clock().now().to_msg()
     goal_msg.pose.pose.position.x = x
     goal_msg.pose.pose.position.y = y
@@ -279,14 +280,16 @@ def main():
 
     # init rclpy
     rclpy.init()
-    node = rclpy.create_node("rosa_summit_node")
+    sim_time_param = Parameter("use_sim_time", rclpy.Parameter.Type.BOOL, True)
+    node = rclpy.create_node("rosa_summit_node", parameter_overrides=[sim_time_param])
+
     vel_publisher = node.create_publisher(Twist, "/summit/cmd_vel", 10)
     explore_publisher = node.create_publisher(Bool, "/summit/explore/resume", 10)
     navigate_to_pose_action_client = ActionClient(
         node, NavigateToPose, "/summit/navigate_to_pose"
     )
 
-    out = navigate_relative(x=2.0, y=0.0, z_orientation=0.0, w_orientation=1.0)
+    out = navigate_to_pose(x=2.0, y=0.0, z_orientation=0.0, w_orientation=1.0)
     print(out)
     time.sleep(10)
     exit(0)
