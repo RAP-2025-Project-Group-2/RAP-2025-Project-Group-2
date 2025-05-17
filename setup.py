@@ -15,6 +15,14 @@ setup(
             os.path.join("share", package_name, "launch"),
             glob(os.path.join("launch", "*launch.[pxy][yma]*")),
         ),
+        (
+            os.path.join("share", package_name, "world"),
+            glob(os.path.join("world", "**", "*.*"), recursive=True),
+        ),
+        (
+            os.path.join("share", package_name, "maps"),
+            glob(os.path.join("maps", "*.*"), recursive=True),
+        ),
     ],
     install_requires=["setuptools"],
     zip_safe=True,
