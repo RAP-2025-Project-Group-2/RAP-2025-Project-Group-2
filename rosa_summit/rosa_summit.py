@@ -8,14 +8,16 @@ import pathlib
 import time
 import subprocess
 from typing import Tuple
-from geometry_msgs.msg import Twist, PoseStamped
+from geometry_msgs.msg import Twist
 from std_msgs.msg import Bool
 from nav2_msgs.action import NavigateToPose
 import rclpy
+from rclpy.action import ActionClient
 
 node = None
 vel_publisher = None
 explore_publisher = None
+navigate_to_pose_action_client = None
 
 
 def execute_ros_command(command: str) -> Tuple[bool, str]:
@@ -153,25 +155,18 @@ def navigate_to_pose(
     :param z_orientation: The z component of the target orientation (quaternion).
     :param w_orientation: The w component of the target orientation (quaternion).
     """
-    cmd = (
-        f"ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose '{{ "
-        f"pose: {{ "
-        f'header: {{ frame_id: "map" }}, '
-        f"pose: {{ "
-        f"position: {{x: {x}, y: {y}, z: 0.0}}, "
-        f"orientation: {{x: 0.0, y: 0.0, z: {z_orientation}, w: {w_orientation}}} "
-        f"}} }} }}"
-    )
-    success, output = execute_ros_command(cmd)
-    if success:
-        # The output of send_goal can be verbose, let's return a simpler message.
-        # We might want to parse the output to see if the goal was accepted.
-        if "Goal accepted" in output:
-            return f"Navigation goal sent to x: {x}, y: {y}, orientation_z: {z_orientation}, orientation_w: {w_orientation}. Waiting for result..."
-        else:
-            return f"Navigation goal to x: {x}, y: {y} might have been sent. Output: {output}"
-    else:
-        return f"Failed to send navigation goal. Error: {output}"
+    global navigate_to_pose_action_client, node
+
+    goal_msg = NavigateToPose.Goal()
+    goal_msg.pose.header.frame_id = "map"
+    goal_msg.pose.header.stamp = node.get_clock().now().to_msg()
+    goal_msg.pose.pose.position.x = x
+    goal_msg.pose.pose.position.y = y
+    goal_msg.pose.pose.orientation.z = z_orientation
+    goal_msg.pose.pose.orientation.w = w_orientation
+
+    navigate_to_pose_action_client.send_goal_async(goal_msg)
+    return f"Navigation goal sent to x: {x}, y: {y}, orientation_z: {z_orientation}, orientation_w: {w_orientation}."
 
 
 def navigate_relative(
@@ -185,23 +180,18 @@ def navigate_relative(
     :param z_orientation: The z component of the target orientation (quaternion) relative to the robot.
     :param w_orientation: The w component of the target orientation (quaternion) relative to the robot.
     """
-    cmd = (
-        f"ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose '{{ "
-        f"pose: {{ "
-        f'header: {{ frame_id: "summit/base_link" }}, '
-        f"pose: {{ "
-        f"position: {{x: {x}, y: {y}, z: 0.0}}, "
-        f"orientation: {{x: 0.0, y: 0.0, z: {z_orientation}, w: {w_orientation}}} "
-        f"}} }} }}'"
-    )
-    success, output = execute_ros_command(cmd)
-    if success:
-        if "Goal accepted" in output:
-            return f"Relative navigation goal sent to x: {x}, y: {y}, orientation_z: {z_orientation}, orientation_w: {w_orientation}. Waiting for result..."
-        else:
-            return f"Relative navigation goal to x: {x}, y: {y} might have been sent. Output: {output}"
-    else:
-        return f"Failed to send relative navigation goal. Error: {output}"
+    global navigate_to_pose_action_client, node
+
+    goal_msg = NavigateToPose.Goal()
+    goal_msg.pose.header.frame_id = "/summit/base_link"
+    goal_msg.pose.header.stamp = node.get_clock().now().to_msg()
+    goal_msg.pose.pose.position.x = x
+    goal_msg.pose.pose.position.y = y
+    goal_msg.pose.pose.orientation.z = z_orientation
+    goal_msg.pose.pose.orientation.w = w_orientation
+
+    navigate_to_pose_action_client.send_goal_async(goal_msg)
+    return f"Relative navigation goal sent to x: {x}, y: {y}, orientation_z: {z_orientation}, orientation_w: {w_orientation}."
 
 
 def save_map(map_name: str) -> str:
@@ -284,7 +274,7 @@ def navigate_to_location_by_name(location_name: str) -> str:
 
 
 def main():
-    global node, vel_publisher, explore_publisher
+    global node, vel_publisher, explore_publisher, navigate_to_pose_action_client
     print("Hi from rosa_summit.")
 
     # init rclpy
@@ -292,9 +282,13 @@ def main():
     node = rclpy.create_node("rosa_summit_node")
     vel_publisher = node.create_publisher(Twist, "/summit/cmd_vel", 10)
     explore_publisher = node.create_publisher(Bool, "/summit/explore/resume", 10)
+    navigate_to_pose_action_client = ActionClient(
+        node, NavigateToPose, "/summit/navigate_to_pose"
+    )
 
-    toggle_auto_exploration(True)
-    time.sleep(2)
+    out = navigate_relative(x=2.0, y=0.0, z_orientation=0.0, w_orientation=1.0)
+    print(out)
+    time.sleep(10)
     exit(0)
 
     # Get the current username
