@@ -103,6 +103,7 @@ LOCATIONS = {
 }
 
 
+@tool
 def send_vel(velocity: float) -> str:
     """
     Sets the forward velocity of the robot.
@@ -117,6 +118,7 @@ def send_vel(velocity: float) -> str:
     return "Velocity set to %s" % velocity
 
 
+@tool
 def stop() -> str:
     """
     Stops or halts the robot by setting its velocity to zero
@@ -128,6 +130,7 @@ def stop() -> str:
     return "Robot stopped"
 
 
+@tool
 def toggle_auto_exploration(resume_exploration: bool) -> str:
     """
     Starts or stops the autonomous exploration.
@@ -145,6 +148,7 @@ def toggle_auto_exploration(resume_exploration: bool) -> str:
         return "Autonomous exploration stopped/paused."
 
 
+@tool
 def navigate_to_pose(
     x: float, y: float, z_orientation: float, w_orientation: float
 ) -> str:
@@ -170,6 +174,7 @@ def navigate_to_pose(
     return f"Navigation goal sent to x: {x}, y: {y}, orientation_z: {z_orientation}, orientation_w: {w_orientation}."
 
 
+@tool
 def navigate_relative(
     x: float, y: float, z_orientation: float, w_orientation: float
 ) -> str:
@@ -195,6 +200,7 @@ def navigate_relative(
     return f"Relative navigation goal sent to x: {x}, y: {y}, orientation_z: {z_orientation}, orientation_w: {w_orientation}."
 
 
+@tool
 def save_map(map_name: str) -> str:
     """
     Saves the current map from the /summit/map topic to .yaml and .pgm files
@@ -222,6 +228,7 @@ def save_map(map_name: str) -> str:
         return f"Failed to save map {map_name} in {maps_dir}. Error: {output}"
 
 
+@tool
 def list_saved_maps() -> str:
     """
     Lists all saved maps in the 'maps' directory of the 'rosa_summit' package.
@@ -245,6 +252,7 @@ def list_saved_maps() -> str:
         return f"Error listing maps: {e}"
 
 
+@tool
 def get_location_names() -> str:
     """
     Returns a list of available location names.
@@ -252,12 +260,14 @@ def get_location_names() -> str:
     return f"Available locations: {', '.join(LOCATIONS.keys())}"
 
 
+@tool
 def navigate_to_location_by_name(location_name: str) -> str:
     """
     Moves the robot to a predefined location by its name.
 
     :param location_name: The name of the location to navigate to (e.g., 'kitchen', 'gym').
     """
+    global navigate_to_pose_action_client, node
     location_name_lower = location_name.lower()
     if location_name_lower not in LOCATIONS:
         return f"Location '{location_name}' not found. Available locations are: {', '.join(LOCATIONS.keys())}"
@@ -266,12 +276,16 @@ def navigate_to_location_by_name(location_name: str) -> str:
     pos = loc_data["position"]
     orient = loc_data["orientation"]
 
-    return navigate_to_pose(
-        x=pos["x"],
-        y=pos["y"],
-        z_orientation=orient["z"],
-        w_orientation=orient["w"],
-    )
+    goal_msg = NavigateToPose.Goal()
+    goal_msg.pose.header.frame_id = "map"
+    goal_msg.pose.header.stamp = node.get_clock().now().to_msg()
+    goal_msg.pose.pose.position.x = pos["x"]
+    goal_msg.pose.pose.position.y = pos["y"]
+    goal_msg.pose.pose.orientation.z = orient["z"]
+    goal_msg.pose.pose.orientation.w = orient["w"]
+
+    navigate_to_pose_action_client.send_goal_async(goal_msg)
+    return f"Navigation goal sent to location '{location_name}'. Position: {pos}, Orientation: {orient}."
 
 
 def main():
@@ -288,11 +302,6 @@ def main():
     navigate_to_pose_action_client = ActionClient(
         node, NavigateToPose, "/summit/navigate_to_pose"
     )
-
-    out = navigate_to_pose(x=2.0, y=0.0, z_orientation=0.0, w_orientation=1.0)
-    print(out)
-    time.sleep(10)
-    exit(0)
 
     # Get the current username
     user_name = os.getenv("USER")
@@ -328,7 +337,7 @@ def main():
         return
 
     prompt = RobotSystemPrompts()
-    prompt.critical_instructions = "Before using a tool that performs an action, respond by saying which tool will be invoked and with which parameters. Always ask for confirmation before calling the tool."
+    prompt.embodiment = "You are an helpful robot named Summit, designed to assist users in a simulated environment. You can navigate, explore, and interact with the environment using various tools."
 
     # Pass the LLM to ROSA with both tools available
     agent = ROSA(
@@ -358,9 +367,9 @@ def main():
 
             try:
                 print("Request sent")
-                res = agent.invoke(msg)
-                if isinstance(res, (list, tuple)):
-                    print(res[0])
+                res = agent.invoke(msg)[0]
+                if isinstance(res, dict) and "text" in res:
+                    print(res["text"])
                 else:
                     print(res)
             except Exception as e:
