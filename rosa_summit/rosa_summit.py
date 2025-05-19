@@ -179,10 +179,16 @@ def navigate_relative(
     x: float, y: float, z_orientation: float, w_orientation: float
 ) -> str:
     """
-    Moves the robot relative to its current position.
+    Moves the robot relative to its current position using the robot's local coordinate frame.
 
-    :param x: The x coordinate of the target position relative to the robot.
-    :param y: The y coordinate of the target position relative to the robot.
+    In the robot's coordinate system (base_link):
+    - Positive X: Move forward
+    - Negative X: Move backward
+    - Positive Y: Move to the left
+    - Negative Y: Move to the right
+
+    :param x: The x coordinate of the target position relative to the robot (forward/backward).
+    :param y: The y coordinate of the target position relative to the robot (left/right).
     :param z_orientation: The z component of the target orientation (quaternion) relative to the robot.
     :param w_orientation: The w component of the target orientation (quaternion) relative to the robot.
     """
