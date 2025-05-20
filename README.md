@@ -76,6 +76,8 @@ The simulation environment uses a modified version of the AWS Robomaker Small Ho
     - Several objects that frequently obstructed the robot's path or caused navigation issues have been removed or repositioned.
     - The physics engine settings within the world file have been adjusted to improve the interaction and stability of the Summit XL robot.
 
+A finished 2D and 3D scan are available in the maps folder.
+
 ## Available LLM Actions
 
 The LLM can control the robot using the following actions:
