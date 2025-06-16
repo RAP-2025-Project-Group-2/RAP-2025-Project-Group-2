@@ -6,6 +6,6 @@ distrobox create --name rap-jazzy \
     --env=XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR \
     --env=ROS_HOSTNAME=localhost \
     --volume=$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY:/tmp/$WAYLAND_DISPLAY \
-    --volume=/home/bonsai/Development/rap:/home/ros/rap \
+    --volume=$HOME/Development/rap:/home/ros/rap \
     --security-opt=seccomp=unconfined \
     --security-opt=apparmor=unconfined"
