@@ -6,16 +6,16 @@ It is intended to be used inside a Container running a specific ROS 2 image. (ro
 ## Setup
 
 1.  **Clone the repository:**
-    Clone this repository into the `~/ros/rap/Gruppe2` directory inside your `rap-jazzy` container.
+    Clone this repository into the `~/rap/Gruppe2` directory inside your `rap-jazzy` container.
 
     ```bash
-    git clone <repository_url> ~/ros/rap/Gruppe2
+    git clone <repository_url> ~/rap/Gruppe2
     ```
 
 2.  **Initialize the environment:**
     Source the `init.sh` script to set up the ROS2 workspace and install dependencies.
     ```bash
-    source ~/ros/rap/Gruppe2/init.sh
+    source ~/rap/Gruppe2/init.sh
     ```
 
 ## Dependencies
